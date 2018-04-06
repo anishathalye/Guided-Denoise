@@ -165,7 +165,8 @@ def main():
             labels = (labels1+labels2+labels3+labels4).max(1)[1] + 1  # argmax + offset to match Google's Tensorflow + Inception 1001 class ids
             print('  step = %d, loss = %g, target = %d, label = %d' % (step+1, loss, target_label, labels))
         outputs.append(labels.data.cpu().numpy())
-        out_path = os.path.join(args.output_dir, os.path.basename(filenames[i]))
+        name = os.path.splitext(os.path.basename(filenames[i]))[0]+'.png'
+        out_path = os.path.join(args.output_dir, name)
         scipy.misc.imsave(out_path, np.transpose(adv[0], (1,2,0)))
 
     outputs = np.concatenate(outputs, axis=0)
