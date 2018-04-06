@@ -40,8 +40,6 @@ parser.add_argument('--checkpoint_path2', default=None,
                     help='Path to network checkpoint.')
 parser.add_argument('--img-size', type=int, default=299, metavar='N',
                     help='Image patch size (default: 299)')
-parser.add_argument('--batch-size', type=int, default=32, metavar='N',
-                    help='Batch size (default: 32)')
 parser.add_argument('--no-gpu', action='store_true', default=False,
                     help='disables GPU training')
 
@@ -79,7 +77,7 @@ def main():
     
 
     dataset = Dataset(args.input_dir, transform=tf)
-    loader = data.DataLoader(dataset, batch_size=args.batch_size, shuffle=False)
+    loader = data.DataLoader(dataset, batch_size=1, shuffle=False)
     
     config, resmodel = get_model1()
     config, inresmodel = get_model2()
@@ -129,9 +127,9 @@ def main():
     filenames = dataset.filenames()
     targets = []
     outputs = []
-    i = 0
-    for batch_idx, (input, _) in enumerate(loader):
+    for i, (input, _) in enumerate(loader):
         orig = input.numpy()
+        print(orig.shape)
         adv = np.copy(orig)
         lower = np.clip(orig - 4.0/255.0, 0, 1)
         upper = np.clip(orig + 4.0/255.0, 0, 1)
@@ -169,7 +167,6 @@ def main():
         outputs.append(labels.data.cpu().numpy())
         out_path = os.path.join(args.output_dir, os.path.basename(filenames[i]))
         scipy.misc.imsave(out_path, np.transpose(adv[0], (1,2,0)))
-        i += 1
 
     outputs = np.concatenate(outputs, axis=0)
 
