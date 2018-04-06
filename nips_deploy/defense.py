@@ -136,6 +136,7 @@ def main():
         target_label = np.random.randint(0, 1000)
         targets.append(target_label)
         target = autograd.Variable(torch.LongTensor(np.array([target_label-1])).cuda())
+        print('image %d of %d' % (i+1, len(filenames)))
         for step in range(10):
             input_var = autograd.Variable(torch.FloatTensor(adv).cuda(), requires_grad=True)
             input_tf = (input_var-mean_tf)/std_tf
@@ -157,13 +158,12 @@ def main():
 
             labels = (labels1+labels2+labels3+labels4)
             loss = xent(labels, target)
-            print('step = %d, loss = %g' % (step+1, loss))
             loss.backward()
             adv = adv - 1.0/255.0 * np.sign(input_var.grad.data.cpu().numpy())
             adv = np.clip(adv, lower, upper)
 
             labels = (labels1+labels2+labels3+labels4).max(1)[1] + 1  # argmax + offset to match Google's Tensorflow + Inception 1001 class ids
-            print('current label: %d' % labels)
+            print('  step = %d, loss = %g, target = %d, label = %d' % (step+1, loss, target_label, labels))
         outputs.append(labels.data.cpu().numpy())
         out_path = os.path.join(args.output_dir, os.path.basename(filenames[i]))
         scipy.misc.imsave(out_path, np.transpose(adv[0], (1,2,0)))
