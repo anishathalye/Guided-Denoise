@@ -30,6 +30,8 @@ from resnext101 import get_model as get_model4
 parser = argparse.ArgumentParser(description='Defence')
 parser.add_argument('--input_dir', metavar='DIR', default='',
                     help='Input directory with images.')
+parser.add_argument('--output_dir', metavar='DIR',
+                    help='Output file to save adversarial images.')
 parser.add_argument('--output_file', metavar='FILE', default='',
                     help='Output file to save labels.')
 parser.add_argument('--checkpoint_path', default=None,
@@ -124,13 +126,18 @@ def main():
 
     xent = torch.nn.CrossEntropyLoss()
 
+    filenames = dataset.filenames()
+    targets = []
     outputs = []
+    i = 0
     for batch_idx, (input, _) in enumerate(loader):
         orig = input.numpy()
         adv = np.copy(orig)
         lower = np.clip(orig - 4.0/255.0, 0, 1)
         upper = np.clip(orig + 4.0/255.0, 0, 1)
-        target = autograd.Variable(torch.LongTensor(np.array([924-1])).cuda())
+        target_label = np.random.randint(0, 1000)
+        targets.append(target_label)
+        target = autograd.Variable(torch.LongTensor(np.array([target_label-1])).cuda())
         for step in range(10):
             input_var = autograd.Variable(torch.FloatTensor(adv).cuda(), requires_grad=True)
             input_tf = (input_var-mean_tf)/std_tf
@@ -160,14 +167,16 @@ def main():
             labels = (labels1+labels2+labels3+labels4).max(1)[1] + 1  # argmax + offset to match Google's Tensorflow + Inception 1001 class ids
             print('current label: %d' % labels)
         outputs.append(labels.data.cpu().numpy())
-        scipy.misc.imsave('adv.png', np.transpose(adv[0], (1,2,0)))
+        out_path = os.path.join(args.output_dir, os.path.basename(filenames[i]))
+        scipy.misc.imsave(out_path, np.transpose(adv[0], (1,2,0)))
+        i += 1
+
     outputs = np.concatenate(outputs, axis=0)
 
     with open(args.output_file, 'w') as out_file:
-        filenames = dataset.filenames()
-        for filename, label in zip(filenames, outputs):
+        for filename, target, label in zip(filenames, targets, outputs):
             filename = os.path.basename(filename)
-            out_file.write('{0},{1}\n'.format(filename, label))
+            out_file.write('{0},{1},{2}\n'.format(filename, target, label))
 
 if __name__ == '__main__':
     main()
