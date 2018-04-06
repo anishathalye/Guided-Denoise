@@ -332,7 +332,7 @@ class Inception3(nn.Module):
         self.conv2d_2b = BasicConv2d(32, 64, kernel_size=3, stride=1, padding=1)
         self.conv2d_3b = BasicConv2d(64, 80, kernel_size=1, stride=1)
         self.conv2d_4a = BasicConv2d(80, 192, kernel_size=3, stride=1)
-	self.Mixed_5b = InceptionA(192, pool_features=32)
+        self.Mixed_5b = InceptionA(192, pool_features=32)
         self.Mixed_5c = InceptionA(256, pool_features=64)
         self.Mixed_5d = InceptionA(288, pool_features=64)
         self.Mixed_6a = InceptionB(288)

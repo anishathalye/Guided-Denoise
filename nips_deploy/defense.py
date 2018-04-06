@@ -69,10 +69,10 @@ def main():
             transforms.ToTensor()
     ])
 
-    mean_torch = autograd.Variable(torch.from_numpy(np.array([0.485, 0.456, 0.406]).reshape([1,3,1,1]).astype('float32')).cuda(), volatile=True)
-    std_torch = autograd.Variable(torch.from_numpy(np.array([0.229, 0.224, 0.225]).reshape([1,3,1,1]).astype('float32')).cuda(), volatile=True)
-    mean_tf = autograd.Variable(torch.from_numpy(np.array([0.5, 0.5, 0.5]).reshape([1,3,1,1]).astype('float32')).cuda(), volatile=True)
-    std_tf = autograd.Variable(torch.from_numpy(np.array([0.5, 0.5, 0.5]).reshape([1,3,1,1]).astype('float32')).cuda(), volatile=True)
+    mean_torch = autograd.Variable(torch.from_numpy(np.array([0.485, 0.456, 0.406]).reshape([1,3,1,1]).astype('float32')).cuda())
+    std_torch = autograd.Variable(torch.from_numpy(np.array([0.229, 0.224, 0.225]).reshape([1,3,1,1]).astype('float32')).cuda())
+    mean_tf = autograd.Variable(torch.from_numpy(np.array([0.5, 0.5, 0.5]).reshape([1,3,1,1]).astype('float32')).cuda())
+    std_tf = autograd.Variable(torch.from_numpy(np.array([0.5, 0.5, 0.5]).reshape([1,3,1,1]).astype('float32')).cuda())
     
 
     dataset = Dataset(args.input_dir, transform=tf)
@@ -121,28 +121,43 @@ def main():
     incepv3model.eval()
     rexmodel.eval()
 
+    xent = torch.nn.CrossEntropyLoss()
+
     outputs = []
     for batch_idx, (input, _) in enumerate(loader):
-        if not args.no_gpu:
-            input = input.cuda()
-        input_var = autograd.Variable(input, volatile=True)
-        input_tf = (input_var-mean_tf)/std_tf
-        input_torch = (input_var - mean_torch)/std_torch
+        orig = input.numpy()
+        adv = np.copy(orig)
+        lower = np.clip(orig - 4.0/255.0, 0, 1)
+        upper = np.clip(orig + 4.0/255.0, 0, 1)
+        target = autograd.Variable(torch.LongTensor(np.array([924-1])).cuda())
+        for step in range(10):
+            input_var = autograd.Variable(torch.FloatTensor(adv).cuda(), requires_grad=True)
+            input_tf = (input_var-mean_tf)/std_tf
+            input_torch = (input_var - mean_torch)/std_torch
 
-        #clean1 = net1.denoise[0](input_torch)        
-        #clean2 = net2.denoise[0](input_tf)
-        #clean3 = net3.denoise(input_tf)
+            #clean1 = net1.denoise[0](input_torch)
+            #clean2 = net2.denoise[0](input_tf)
+            #clean3 = net3.denoise(input_tf)
 
-        #labels1 = net1(clean1,False)[-1]
-        #labels2 = net2(clean2,False)[-1]
-        #labels3 = net3(clean3,False)[-1]
-        
-        labels1 = net1(input_torch,True)[-1]
-        labels2 = net2(input_tf,True)[-1]
-        labels3 = net3(input_tf,True)[-1]
-        labels4 = net4(input_torch,True)[-1]
+            #labels1 = net1(clean1,False)[-1]
+            #labels2 = net2(clean2,False)[-1]
+            #labels3 = net3(clean3,False)[-1]
 
-        labels = (labels1+labels2+labels3+labels4).max(1)[1] + 1  # argmax + offset to match Google's Tensorflow + Inception 1001 class ids
+
+            labels1 = net1(input_torch,True)[-1]
+            labels2 = net2(input_tf,True)[-1]
+            labels3 = net3(input_tf,True)[-1]
+            labels4 = net4(input_torch,True)[-1]
+
+            labels = (labels1+labels2+labels3+labels4)
+            loss = xent(labels, target)
+            print('step = %d, loss = %g' % (step+1, loss))
+            loss.backward()
+            adv = adv - 1.0/255.0 * np.sign(input_var.grad.data.cpu().numpy())
+            adv = np.clip(adv, lower, upper)
+
+            labels = (labels1+labels2+labels3+labels4).max(1)[1] + 1  # argmax + offset to match Google's Tensorflow + Inception 1001 class ids
+            print('current label: %d' % labels)
         outputs.append(labels.data.cpu().numpy())
     outputs = np.concatenate(outputs, axis=0)
 
