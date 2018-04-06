@@ -19,6 +19,7 @@ import torch.utils.data as data
 import torchvision
 import torchvision.datasets.folder
 import torchvision.transforms as transforms
+import scipy.misc
 
 from dataset import Dataset
 from res152_wide import get_model as get_model1
@@ -159,6 +160,7 @@ def main():
             labels = (labels1+labels2+labels3+labels4).max(1)[1] + 1  # argmax + offset to match Google's Tensorflow + Inception 1001 class ids
             print('current label: %d' % labels)
         outputs.append(labels.data.cpu().numpy())
+        scipy.misc.imsave('adv.png', np.transpose(adv[0], (1,2,0)))
     outputs = np.concatenate(outputs, axis=0)
 
     with open(args.output_file, 'w') as out_file:
