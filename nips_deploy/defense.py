@@ -137,7 +137,10 @@ def main():
         targets.append(target_label)
         target = autograd.Variable(torch.LongTensor(np.array([target_label-1])).cuda())
         print('image %d of %d' % (i+1, len(filenames)))
-        for step in range(10):
+        for step in range(100):
+            # XXX this usually finishes in a very small number of steps, and we
+            # could return early in those cases, but I'm too lazy to write the
+            # two lines of code it would take to do this
             input_var = autograd.Variable(torch.FloatTensor(adv).cuda(), requires_grad=True)
             input_tf = (input_var-mean_tf)/std_tf
             input_torch = (input_var - mean_torch)/std_torch
