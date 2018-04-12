@@ -20,9 +20,9 @@ Obligatory picture of sample of adversarial examples against this defense.
 
 ```
 @unpublished{cvpr2018breaks,
-  author = {},
-  title = {},
+  author = {Anish Athalye and Nicholas Carlini},
+  title = {On the Robustness of the CVPR 2018 White-Box Adversarial Example Defenses},
   year = {2018},
-  url = {https://arxiv.org/abs/TODO},
+  url = {https://arxiv.org/abs/1804.03286},
 }
 ```
