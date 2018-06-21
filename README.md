@@ -26,3 +26,18 @@ Obligatory picture of sample of adversarial examples against this defense.
   url = {https://arxiv.org/abs/1804.03286},
 }
 ```
+
+## [robustml] evaluation
+
+Run with:
+
+```bash
+python nips_deploy/robustml_attack.py --imagenet-path <path>
+````
+
+[robustml]: https://github.com/robust-ml/robustml
+
+### Credits
+
+Thanks to [Dimitris Tsipras](https://github.com/dtsip) for writing the robustml
+model wrapper.
