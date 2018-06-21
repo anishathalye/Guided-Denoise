@@ -8,7 +8,7 @@ in the white-box threat model.
 With an L-infinity perturbation of 4/255, we generate targeted adversarial
 examples with 100% success rate.
 
-See our note for more context and details: TODO add link.
+See our note for more context and details: https://arxiv.org/abs/1804.03286
 
 ## Pretty pictures
 
