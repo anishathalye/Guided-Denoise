@@ -21,22 +21,6 @@ from inres import get_model as  get_model2
 from v3 import get_model as get_model3
 from resnext101 import get_model as get_model4
 
-parser = argparse.ArgumentParser(description='Defence')
-parser.add_argument('--input_dir', metavar='DIR', default='',
-                    help='Input directory with images.')
-parser.add_argument('--output_file', metavar='FILE', default='',
-                    help='Output file to save labels.')
-parser.add_argument('--checkpoint_path', default='inceptionresnetv2_state.pth',
-                    help='Path to network checkpoint.')
-parser.add_argument('--checkpoint_path2', default='020.ckpt',
-                    help='Path to network checkpoint.')
-parser.add_argument('--img-size', type=int, default=299, metavar='N',
-                    help='Image patch size (default: 299)')
-parser.add_argument('--batch-size', type=int, default=32, metavar='N',
-                    help='Batch size (default: 32)')
-parser.add_argument('--no-gpu', action='store_true', default=False,
-help='disables GPU training')
-
 class LeNormalize(object):
     """Normalize to -1..1 in Google Inception style
     """
@@ -48,21 +32,19 @@ class LeNormalize(object):
     
     
 class Model(robustml.model.Model):
-  def __init__(self):
+  def __init__(self, no_gpu=False):
       self._dataset = robustml.dataset.ImageNet(shape=(299,299,3))
       self._threat_model = robustml.threat_model.Linf(epsilon=4/255)
 
-      args = parser.parse_args()
-          
       tf = transforms.Compose([
              transforms.Scale([299,299]),
               transforms.ToTensor()
       ])
 
-      self._mean_torch = autograd.Variable(torch.from_numpy(np.array([0.485, 0.456, 0.406]).reshape([1,3,1,1]).astype('float32')).cuda(), volatile=True)
-      self._std_torch = autograd.Variable(torch.from_numpy(np.array([0.229, 0.224, 0.225]).reshape([1,3,1,1]).astype('float32')).cuda(), volatile=True)
-      self._mean_tf = autograd.Variable(torch.from_numpy(np.array([0.5, 0.5, 0.5]).reshape([1,3,1,1]).astype('float32')).cuda(), volatile=True)
-      self._std_tf = autograd.Variable(torch.from_numpy(np.array([0.5, 0.5, 0.5]).reshape([1,3,1,1]).astype('float32')).cuda(), volatile=True)
+      self._mean_torch = autograd.Variable(torch.from_numpy(np.array([0.485, 0.456, 0.406]).reshape([1,3,1,1]).astype('float32')).cuda())
+      self._std_torch = autograd.Variable(torch.from_numpy(np.array([0.229, 0.224, 0.225]).reshape([1,3,1,1]).astype('float32')).cuda())
+      self._mean_tf = autograd.Variable(torch.from_numpy(np.array([0.5, 0.5, 0.5]).reshape([1,3,1,1]).astype('float32')).cuda())
+      self._std_tf = autograd.Variable(torch.from_numpy(np.array([0.5, 0.5, 0.5]).reshape([1,3,1,1]).astype('float32')).cuda())
       
 
       config, resmodel = get_model1()
@@ -98,7 +80,7 @@ class Model(robustml.model.Model):
       else:
           rexmodel.load_state_dict(checkpoint)
 
-      if not args.no_gpu:
+      if not no_gpu:
           inresmodel = inresmodel.cuda()
           resmodel = resmodel.cuda()
           incepv3model = incepv3model.cuda()
@@ -122,7 +104,8 @@ class Model(robustml.model.Model):
       return self._threat_model
 
   def classify(self, x):
-      input_var = autograd.Variable(x, volatile=True)
+      x = np.transpose(np.array([x]), (0,3,1,2))
+      input_var = autograd.Variable(torch.FloatTensor(x).cuda())
       input_tf = (input_var-self._mean_tf)/self._std_tf
       input_torch = (input_var - self._mean_torch)/self._std_torch
 
@@ -131,5 +114,5 @@ class Model(robustml.model.Model):
       labels3 = self._net3(input_tf,True)[-1]
       labels4 = self._net4(input_torch,True)[-1]
 
-      labels = (labels1+labels2+labels3+labels4).max(1)[1] + 1  # argmax + offset to match Google's Tensorflow + Inception 1001 class ids
+      labels = (labels1+labels2+labels3+labels4).max(1)[1]
       return labels

@@ -32,7 +32,8 @@ Obligatory picture of sample of adversarial examples against this defense.
 Run with:
 
 ```bash
-python nips_deploy/robustml_attack.py --imagenet-path <path>
+cd nips_deploy
+python robustml_attack.py --imagenet-path <path>
 ````
 
 [robustml]: https://github.com/robust-ml/robustml
