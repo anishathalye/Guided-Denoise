@@ -50,7 +50,7 @@ class LeNormalize(object):
 class Model(robustml.model.Model):
   def __init__(self):
       self._dataset = robustml.dataset.ImageNet(shape=(299,299,3))
-      self._threat_model = robustml.threat_model.L2(epsilon=4/255)
+      self._threat_model = robustml.threat_model.Linf(epsilon=4/255)
 
       args = parser.parse_args()
           
